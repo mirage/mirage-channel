@@ -1,3 +1,5 @@
 PKG cstruct lwt mirage-types io-page
+PKG alcotest oUnit
+
 S lib/ lib_test/
 B _build/**
