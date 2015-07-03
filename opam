@@ -19,8 +19,8 @@ remove: ["ocamlfind" "remove" "channel"]
 
 depends: [
   "ocamlfind" {build}
+  "mirage-types-lwt"
   "io-page"
-  "mirage-types"
   "lwt"
   "cstruct"
   "alcotest"    {test}
