@@ -1,7 +1,5 @@
 open Common
 
-let (>>=) = Lwt.(>>=)
-
 (* this is a very small set of tests for the channel interface,
    intended to ensure that EOF conditions on the underlying flow are
    handled properly *)
