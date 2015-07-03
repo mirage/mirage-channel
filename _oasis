@@ -1,0 +1,25 @@
+OASISFormat: 0.4
+Name:        channel
+Version:     1.0.0
+Synopsis:    Ethernet, TCP/IPv4 and DHCPv4 library
+Authors:     Anil Madhavapeddy, Mindy Preston, Thomas Gazagnaire
+License:     ISC
+Plugins:     META (0.4), DevFiles (0.4)
+BuildTools:  ocamlbuild
+
+Library channel
+  Path:         lib
+  Findlibname:  channel
+  Modules:      Channel
+  BuildDepends: io-page, mirage-types, cstruct, lwt
+
+Executable test
+  Build$:         flag(tests)
+  Path:           lib_test
+  CompiledObject: best
+  MainIs:         test.ml
+  BuildDepends:   alcotest, oUnit, channel, mirage-flow, lwt.unix, io-page.unix
+
+Test test
+  Run$:    flag(tests)
+  Command: $test -q
