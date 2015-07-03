@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: ee15aec083b8693581fefdbda4c31dcf)
+version = "1.0.0"
+description = "Ethernet, TCP/IPv4 and DHCPv4 library"
+requires = "io-page mirage-types cstruct lwt"
+archive(byte) = "channel.cma"
+archive(byte, plugin) = "channel.cma"
+archive(native) = "channel.cmxa"
+archive(native, plugin) = "channel.cmxs"
+exists_if = "channel.cma"
+# OASIS_STOP
+
