@@ -42,3 +42,5 @@ true: annot, bin_annot
 <lib_test/*.ml{,i,y}>: pkg_oUnit
 <lib_test/*.ml{,i,y}>: use_channel
 # OASIS_STOP
+true: bin_annot, debug, short_paths
+true: warn_error(+1..49), warn(A-4-41-44)
