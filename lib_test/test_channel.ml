@@ -53,8 +53,17 @@ let test_read_line () =
   assert_string "read line" input (Cstruct.copyv buf);
   Lwt.return_unit
 
+let test_read_exactly () =
+  let input = "I am the very model of a modern major general" in
+  let f = Fflow.make ~input:(Fflow.input_string input) () in
+  let c = Channel.create f in
+  Channel.read_exactly ~len:4 c >>= fun bufs ->
+  assert_int "wrong length" 4 (Cstruct.(len (concat bufs)));
+  Lwt.return_unit
+
 let suite = [
   "read_char + EOF" , `Quick, test_read_char_eof;
   "read_until + EOF", `Quick, test_read_until_eof;
   "read_line"       , `Quick, test_read_line;
+  "read_exactly"    , `Quick, test_read_exactly;
 ]

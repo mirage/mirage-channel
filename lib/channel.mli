@@ -18,4 +18,8 @@ module Make(F:V1_LWT.FLOW) : sig
   include V1_LWT.CHANNEL with type flow = F.flow
   exception Read_error of F.error
   exception Write_error of F.error
+
+  val read_exactly: len:int -> t -> Cstruct.t list io
+  (** [read_exactly len t] reads [len] bytes from the channel [t] or fails
+      with [Read_error] or [End_of_file]. *)
 end

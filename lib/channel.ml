@@ -96,6 +96,16 @@ module Make(Flow:V1_LWT.FLOW) = struct
       Lwt.return buf
     end
 
+  let read_exactly ~len t =
+    let rec loop acc = function
+      | 0 ->
+        Lwt.return (List.rev acc)
+      | len ->
+        read_some ~len t
+        >>= fun buffer ->
+        loop (buffer :: acc) (len - (Cstruct.len buffer)) in
+    loop [] len
+
   (* Read up to len characters from the input channel as a
      stream (and read all available if no length specified *)
   let read_stream ?len t =
