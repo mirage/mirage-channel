@@ -23,6 +23,7 @@ depends: [
   "io-page"
   "lwt"
   "cstruct"
+  "logs"
   "alcotest"    {test}
   "ounit"       {test}
   "mirage-flow" {test}
