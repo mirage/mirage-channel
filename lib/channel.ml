@@ -18,6 +18,10 @@
 
 (** Buffered reading and writing over the Flow API *)
 
+let src = Logs.Src.create "channel" ~doc:"Buffered reading and writing over the FLow API"
+
+module Log = (val Logs.src_log src : Logs.LOG)
+
 open Lwt.Infix
 
 module Make(Flow:V1_LWT.FLOW) = struct
@@ -50,10 +54,10 @@ module Make(Flow:V1_LWT.FLOW) = struct
   let ibuf_refill t =
     Flow.read t.flow >>= function
     | `Ok buf ->
-      (* users of get_ibuf (and therefore ibuf_refill) expect the buffer
-         returned here to have length >0; if Flow.read ever gives us empty
-         buffers, this will be violated causing Channel users to see Cstruct
-         exceptions *)
+      if Cstruct.len buf = 0 then begin
+        Log.err (fun f -> f "FLOW.read returned 0 bytes in violation of the specification");
+        raise (Failure "Channel.read: FLOW.read returned 0 bytes in violation of the specification")
+      end;
       t.ibuf <- Some buf;
       Lwt.return_unit
     | `Error e ->

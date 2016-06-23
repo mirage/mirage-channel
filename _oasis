@@ -11,7 +11,7 @@ Library channel
   Path:         lib
   Findlibname:  channel
   Modules:      Channel
-  BuildDepends: io-page, mirage-types.lwt, cstruct, lwt
+  BuildDepends: io-page, mirage-types.lwt, cstruct, lwt, logs
 
 Executable test
   Build$:         flag(tests)
