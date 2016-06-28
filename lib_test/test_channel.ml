@@ -61,9 +61,29 @@ let test_read_exactly () =
   assert_int "wrong length" 4 (Cstruct.(len (concat bufs)));
   Lwt.return_unit
 
+let test_read_until_eof_then_write () =
+  let str = "I am the very model of a modern major general" in
+  let closed = ref false in
+  let output _buf _off len =
+    if !closed
+    then OUnit.assert_failure "attempted to write after the flow was closed"
+    else Lwt.return len in
+  let close () =
+    closed := true;
+    Lwt.return_unit in
+  let input = Fflow.input_string str in
+  let f = Fflow.make ~close ~input ~output () in
+  let c = Channel.create f in
+  (* Should read to EOF: *)
+  Channel.read_line c >>= fun _ ->
+  Channel.write_line c "Even though I've read to EOF, I should be able to write";
+  Channel.flush c >>= fun () ->
+  Lwt.return_unit
+
 let suite = [
   "read_char + EOF" , `Quick, test_read_char_eof;
   "read_until + EOF", `Quick, test_read_until_eof;
   "read_line"       , `Quick, test_read_line;
   "read_exactly"    , `Quick, test_read_exactly;
+  "write after read EOF", `Quick, test_read_until_eof_then_write;
 ]

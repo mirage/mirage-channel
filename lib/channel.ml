@@ -63,9 +63,6 @@ module Make(Flow:V1_LWT.FLOW) = struct
     | `Error e ->
       Lwt.fail (Read_error e)
     | `Eof ->
-      (* close the flow before throwing exception; otherwise it will never be
-         GC'd *)
-      Flow.close t.flow >>= fun () ->
       Lwt.fail End_of_file
 
   let rec get_ibuf t =
