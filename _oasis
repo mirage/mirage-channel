@@ -1,7 +1,7 @@
 OASISFormat: 0.4
 Name:        channel
-Version:     1.0.0
-Synopsis:    Ethernet, TCP/IPv4 and DHCPv4 library
+Version:     1.1.0
+Synopsis:    Buffered channels over Mirage FLOW implementations
 Authors:     Anil Madhavapeddy, Mindy Preston, Thomas Gazagnaire
 License:     ISC
 Plugins:     META (0.4), DevFiles (0.4)
