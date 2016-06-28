@@ -1,7 +1,7 @@
 # OASIS_START
-# DO NOT EDIT (digest: 78ce84d8b465231cff07aac593849a9f)
-version = "1.0.0"
-description = "Ethernet, TCP/IPv4 and DHCPv4 library"
+# DO NOT EDIT (digest: 3fe1cde37cb24a8633ab66e00f166770)
+version = "1.1.0"
+description = "Buffered channels over Mirage FLOW implementations"
 requires = "io-page mirage-types.lwt cstruct lwt logs"
 archive(byte) = "channel.cma"
 archive(byte, plugin) = "channel.cma"
