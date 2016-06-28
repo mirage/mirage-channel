@@ -21,11 +21,12 @@ depends: [
   "ocamlfind" {build}
   "mirage-types-lwt"
   "io-page"
-  "lwt"
+  "lwt" {>= "2.4.7"}
   "cstruct"
   "logs"
-  "alcotest"    {test}
-  "ounit"       {test}
+  "alcotest" {test}
+  "ounit" {test}
   "mirage-flow" {test}
+  "ocamlbuild" {build}
 ]
 conflicts: [ "tcpip" {<"2.5.0"} ]
