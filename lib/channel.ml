@@ -230,4 +230,6 @@ module Make(Flow:V1_LWT.FLOW) = struct
   let close t =
     Lwt.finalize (fun () -> flush t) (fun () -> Flow.close t.flow)
 
+  let disconnect t = Flow.disconnect t.flow
+
 end
