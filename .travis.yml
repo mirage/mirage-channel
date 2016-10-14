@@ -1,7 +1,20 @@
 language: c
-sudo: required
-install: wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/master/.travis-opam.sh
-script: bash -ex .travis-opam.sh
+install: wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/master/.travis-docker.sh
+script: bash -ex .travis-docker.sh
+services:
+  - docker
+sudo: false
 env:
-  - OCAML_VERSION=4.01
-  - OCAML_VERSION=4.02
+ global:
+   - PACKAGE="channel"
+   - EXTRA_REMOTES="https://github.com/mirage/mirage-dev.git"
+   - PRE_INSTALL_HOOK="cd /home/opam/opam-repository && git pull origin master && opam update -u -y"
+   - POST_INSTALL_HOOK="git clone git://github.com/mirage/mirage-skeleton -b mirage-dev && cd mirage-skeleton && make MODE=unix"
+ matrix:
+   - DISTRO=debian-stable OCAML_VERSION=4.02.3
+   - DISTRO=debian-testing OCAML_VERSION=4.02.3
+   - DISTRO=debian-unstable OCAML_VERSION=4.02.3
+   - DISTRO=ubuntu-16.04 OCAML_VERSION=4.03.0
+   - DISTRO=centos-7 OCAML_VERSION=4.03.0
+   - DISTRO=fedora-24 OCAML_VERSION=4.02.3
+   - DISTRO=alpine OCAML_VERSION=4.03.0

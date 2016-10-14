@@ -1,0 +1,7 @@
+version = "%%VERSION%%"
+description = "Buffered channels over Mirage FLOW implementations"
+requires = "io-page mirage-types.lwt cstruct lwt logs"
+archive(byte) = "channel.cma"
+plugin(byte) = "channel.cma"
+archive(native) = "channel.cmxa"
+plugin(native) = "channel.cmxs"
