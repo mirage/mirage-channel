@@ -4,6 +4,6 @@
 open Topkg
 
 let () =
-  Pkg.describe "mirage-channel" @@ fun c ->
+  Pkg.describe "channel" @@ fun c ->
   Ok [ Pkg.mllib "src/channel.mllib";
        Pkg.test "test/test"; ]
