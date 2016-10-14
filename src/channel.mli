@@ -14,6 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+(** Buffered I/O channels over the unbuffered MirageOS FLOW interface *)
+
+(** Functor to create a CHANNEL from a {!V1_LWT.FLOW} implementation *)
 module Make(F:V1_LWT.FLOW) : sig
   include V1_LWT.CHANNEL with type flow = F.flow
   exception Read_error of F.error
