@@ -1,5 +1,5 @@
 mirage-channel — Buffered channels for MirageOS FLOW types
--------------------------------------------------------------------------------
+----------------------------------------------------------
 %%VERSION%%
 
 Channels are buffered reader/writers built on top of unbuffered `FLOW`
