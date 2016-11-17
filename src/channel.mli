@@ -15,12 +15,12 @@
  *)
 
 (** Buffered I/O channels over the unbuffered MirageOS FLOW interface *)
+exception Read_error of V1.Flow.error
+exception Write_error of V1.Flow.write_error
 
 (** Functor to create a CHANNEL from a {!V1_LWT.FLOW} implementation *)
 module Make(F:V1_LWT.FLOW) : sig
   include V1_LWT.CHANNEL with type flow = F.flow
-  exception Read_error of F.error
-  exception Write_error of F.error
 
   val read_exactly: len:int -> t -> Cstruct.t list io
   (** [read_exactly len t] reads [len] bytes from the channel [t] or fails
