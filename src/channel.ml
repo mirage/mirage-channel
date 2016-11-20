@@ -20,6 +20,9 @@
 
 let src = Logs.Src.create "channel" ~doc:"Buffered reading and writing over the FLow API"
 
+exception Write_error of V1.Flow.write_error
+exception Read_error of V1.Flow.error
+
 module Log = (val Logs.src_log src : Logs.LOG)
 
 open Lwt.Infix
@@ -30,9 +33,6 @@ module Make(Flow:V1_LWT.FLOW) = struct
   type buffer = Cstruct.t
   type +'a io = 'a Lwt.t
   type 'a io_stream = 'a Lwt_stream.t
-
-  exception Write_error of Flow.error
-  exception Read_error of Flow.error
 
   type t = {
     flow: flow;
@@ -53,17 +53,17 @@ module Make(Flow:V1_LWT.FLOW) = struct
 
   let ibuf_refill t =
     Flow.read t.flow >>= function
-    | `Ok buf ->
+    | Ok (`Data buf) ->
       if Cstruct.len buf = 0 then begin
         Log.err (fun f -> f "FLOW.read returned 0 bytes in violation of the specification");
         raise (Failure "Channel.read: FLOW.read returned 0 bytes in violation of the specification")
       end;
       t.ibuf <- Some buf;
       Lwt.return_unit
-    | `Error e ->
+    | Ok `Eof ->
+      Lwt.fail End_of_file (* TODO: hm, really? *)
+    | Error e ->
       Lwt.fail (Read_error e)
-    | `Eof ->
-      Lwt.fail End_of_file
 
   let rec get_ibuf t =
     match t.ibuf with
@@ -223,9 +223,9 @@ module Make(Flow:V1_LWT.FLOW) = struct
     let l = List.rev t.obufq in
     t.obufq <- [];
     Flow.writev t.flow l >>= function
-    | `Ok ()   -> Lwt.return_unit
-    | `Error e -> Lwt.fail (Write_error e)
-    | `Eof     -> Lwt.fail End_of_file
+    | Ok ()   -> Lwt.return_unit
+    | Error `Closed -> Lwt.fail End_of_file
+    | Error e -> Lwt.fail (Write_error e)
 
   let close t =
     Lwt.finalize (fun () -> flush t) (fun () -> Flow.close t.flow)
