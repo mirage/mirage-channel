@@ -1,4 +1,4 @@
-version = "%%VERSION%%"
+version = "%%VERSION_NUM%%"
 description = "Buffered channels over Mirage FLOW implementations"
 requires = "io-page mirage-types.lwt cstruct lwt logs"
 archive(byte) = "channel.cma"

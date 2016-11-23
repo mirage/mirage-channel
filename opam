@@ -14,6 +14,7 @@ depends: [
   "topkg" {build} 
   "mirage-types-lwt"
   "io-page"
+  "result"
   "lwt" {>= "2.4.7"}
   "cstruct"
   "logs"
