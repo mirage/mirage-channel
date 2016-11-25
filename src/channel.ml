@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2011-2015 Anil Madhavapeddy <anil@recoil.org>
+ * Copyright (c) 2011-2016 Anil Madhavapeddy <anil@recoil.org>
  * Copyright (c) 2015 Mindy Preston
  * Copyright (c) 2015 Thomas Gazagnaire <thomas@gazagnaire.org>
  *
@@ -18,10 +18,7 @@
 
 (** Buffered reading and writing over the Flow API *)
 
-let src = Logs.Src.create "channel" ~doc:"Buffered reading and writing over the FLow API"
-
-exception Write_error of V1.Flow.write_error
-exception Read_error of V1.Flow.error
+let src = Logs.Src.create "channel" ~doc:"Buffered reading and writing over the Flow API"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
@@ -32,7 +29,6 @@ module Make(Flow:V1_LWT.FLOW) = struct
   type flow = Flow.flow
   type buffer = Cstruct.t
   type +'a io = 'a Lwt.t
-  type 'a io_stream = 'a Lwt_stream.t
 
   type t = {
     flow: flow;
@@ -52,91 +48,82 @@ module Make(Flow:V1_LWT.FLOW) = struct
   let to_flow { flow; _ } = flow
 
   let ibuf_refill t =
-    Flow.read t.flow >>= function
+    Flow.read t.flow >|= function
+    | Ok (`Data buf) when Cstruct.len buf = 0 ->
+      Log.err (fun f -> f "FLOW.read returned 0 bytes in violation of the specification");
+      Error (`Msg "Channel.read: FLOW.read returned 0 bytes in violation of the specification")
     | Ok (`Data buf) ->
-      if Cstruct.len buf = 0 then begin
-        Log.err (fun f -> f "FLOW.read returned 0 bytes in violation of the specification");
-        raise (Failure "Channel.read: FLOW.read returned 0 bytes in violation of the specification")
-      end;
       t.ibuf <- Some buf;
-      Lwt.return_unit
-    | Ok `Eof ->
-      Lwt.fail End_of_file (* TODO: hm, really? *)
-    | Error e ->
-      Lwt.fail (Read_error e)
+      Ok (`Data buf)
+    | Ok `Eof -> Ok `Eof
+    | Error (`Msg m) -> Error (`Msg m)
+
+  let bind v fn =
+   v >>= function
+   | Ok (`Data buf) -> fn buf
+   | Ok `Eof -> Lwt.return (Ok `Eof)
+   | Error (`Msg m) -> Lwt.return (Error (`Msg m))
+
+  let (>>=~) = bind
 
   let rec get_ibuf t =
     match t.ibuf with
-    | None -> ibuf_refill t >>= fun () -> get_ibuf t
-    | Some buf when Cstruct.len buf = 0 -> ibuf_refill t >>= fun () -> get_ibuf t
-    | Some buf -> Lwt.return buf
+    | None -> ibuf_refill t >>=~ fun _ -> get_ibuf t
+    | Some buf when Cstruct.len buf = 0 -> ibuf_refill t >>=~ fun _ -> get_ibuf t
+    | Some buf -> Lwt.return (Ok (`Data buf))
 
   (* Read one character from the input channel *)
   let read_char t =
     get_ibuf t (* the fact that we returned means we have at least 1 char *)
-    >>= fun buf ->
+    >>=~ fun buf ->
     let c = Cstruct.get_char buf 0 in
     t.ibuf <- Some (Cstruct.shift buf 1); (* advance read buffer, possibly to
                                              EOF *)
-    Lwt.return c
+    Lwt.return (Ok (`Data c))
 
   (* Read up to len characters from the input channel
      and at most a full view. If not specified, read all *)
   let read_some ?len t =
     (* get_ibuf potentially throws EOF-related exceptions *)
-    get_ibuf t >>= fun buf ->
+    get_ibuf t >>=~ fun buf ->
     let avail = Cstruct.len buf in
     let len = match len with |Some len -> len |None -> avail in
     if len < avail then begin
       let hd,tl = Cstruct.split buf len in
       t.ibuf <- Some tl; (* leave some in the buffer; next time, we won't do a
                             blocking read *)
-      Lwt.return hd
+      Lwt.return (Ok (`Data hd))
     end else begin
       t.ibuf <- None;
-      Lwt.return buf
+      Lwt.return (Ok (`Data buf))
     end
 
   let read_exactly ~len t =
     let rec loop acc = function
       | 0 ->
-        Lwt.return (List.rev acc)
+        Lwt.return (Ok (`Data (List.rev acc)))
       | len ->
         read_some ~len t
-        >>= fun buffer ->
+        >>=~ fun buffer ->
         loop (buffer :: acc) (len - (Cstruct.len buffer)) in
     loop [] len
 
-  (* Read up to len characters from the input channel as a
-     stream (and read all available if no length specified *)
-  let read_stream ?len t =
-    Lwt_stream.from (fun () ->
-        Lwt.catch
-          (fun () -> read_some ?len t >>= fun v -> Lwt.return (Some v))
-          (function End_of_file -> Lwt.return_none | e -> Lwt.fail e)
-      )
-
-  let zero = Cstruct.create 0
-
   (* Read until a character is found *)
   let read_until t ch =
-    Lwt.catch
-      (fun () ->
-         get_ibuf t >>= fun buf ->
-         let len = Cstruct.len buf in
-         let rec scan off =
-           if off = len then None
-           else if Cstruct.get_char buf off = ch then Some off else scan (off+1)
-         in
-         match scan 0 with
-         | None ->                (* not found, return what we have until EOF *)
-           t.ibuf <- None;    (* basically guaranteeing that next read is EOF *)
-           Lwt.return (false, buf)
-         | Some off ->                          (* found, so split the buffer *)
-           let hd = Cstruct.sub buf 0 off in
-           t.ibuf <- Some (Cstruct.shift buf (off+1));
-           Lwt.return (true, hd))
-      (function End_of_file -> Lwt.return (false, zero) | e -> Lwt.fail e)
+    get_ibuf t >>=~ fun buf ->
+    let len = Cstruct.len buf in
+    let rec scan off =
+      if off = len then None
+      else if Cstruct.get_char buf off = ch then Some off else scan (off+1)
+    in
+    match scan 0 with
+    | None -> (* not found, return what we have until EOF *)
+       t.ibuf <- None; (* basically guaranteeing that next read is EOF *)
+       Lwt.return (Ok (`Not_found buf))
+    | Some off -> (* found, so split the buffer *)
+       let hd = Cstruct.sub buf 0 off in
+       t.ibuf <- Some (Cstruct.shift buf (off+1));
+       Lwt.return (Ok (`Found hd))
 
   (* This reads a line of input, which is terminated either by a CRLF
      sequence, or the end of the channel (which counts as a line).
@@ -144,19 +131,20 @@ module Make(Flow:V1_LWT.FLOW) = struct
   let read_line t =
     let rec get acc =
       read_until t '\n' >>= function
-      |(false, v) ->
-        if Cstruct.len v = 0 then Lwt.return (v :: acc) else get (v :: acc)
-      |(true, v) -> begin
+      | Error (`Msg m) -> Lwt.return (Error (`Msg m))
+      | Ok `Eof -> Lwt.return (Ok (`Data acc))
+      | Ok (`Not_found buf) when Cstruct.len buf = 0 -> Lwt.return (Ok (`Data acc))
+      | Ok (`Not_found buf) -> get (buf::acc)
+      | Ok (`Found buf) ->
           (* chop the CR if present *)
-          let vlen = Cstruct.len v in
-          let v =
-            if vlen > 0 && (Cstruct.get_char v (vlen-1) = '\r') then
-              Cstruct.sub v 0 (vlen-1) else v
+          let buflen = Cstruct.len buf in
+          let buf =
+            if buflen > 0 && (Cstruct.get_char buf (buflen-1) = '\r') then
+              Cstruct.sub buf 0 (buflen-1) else buf
           in
-          Lwt.return (v :: acc)
-        end
+          Lwt.return (Ok (`Data (buf :: acc)))
     in
-    get [] >|= List.rev
+    get [] >>=~ fun bits -> Lwt.return (Ok (`Data (List.rev bits)))
 
   (* Output functions *)
 
@@ -222,10 +210,7 @@ module Make(Flow:V1_LWT.FLOW) = struct
     queue_obuf t;
     let l = List.rev t.obufq in
     t.obufq <- [];
-    Flow.writev t.flow l >>= function
-    | Ok ()   -> Lwt.return_unit
-    | Error `Closed -> Lwt.fail End_of_file
-    | Error e -> Lwt.fail (Write_error e)
+    Flow.writev t.flow l
 
   let close t =
     Lwt.finalize (fun () -> flush t) (fun () -> Flow.close t.flow)

@@ -1,4 +1,5 @@
 let (>>=) = Lwt.(>>=)
+let (>|=) = Lwt.(>|=)
 
 let fail fmt = Printf.ksprintf OUnit.assert_failure fmt
 

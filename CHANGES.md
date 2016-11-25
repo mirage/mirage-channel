@@ -1,3 +1,13 @@
+v3.0.0
+------
+
+Adapt to MirageOS 3 CHANNEL interface:
+
+- use `result` instead of exceptions
+- hide `read_until` as an internal implementation
+- remove `read_stream` from external interface as it is
+  difficult to combine Lwt_stream and error handling.
+
 v1.1.1 2016-10-20
 -----------------
 
