@@ -1,7 +1,7 @@
 true : annot, bin_annot, safe_string, package(bytes)
 true: debug, short_paths, principal
 true: warn_error(+1..49), warn(A-4-41-44)
-true: package(io-page mirage-types.lwt cstruct lwt logs result)
+true: package(io-page mirage-types mirage-types-lwt cstruct lwt logs result)
 <test/*>: package(alcotest oUnit mirage-flow lwt.unix io-page.unix)
 <src> : include
 <test> : include
