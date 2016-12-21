@@ -1,53 +1,59 @@
-open Common
+open Lwt.Infix
+module F = Mirage_flow_lwt.F
+
+let fail fmt = Fmt.kstrf Alcotest.fail fmt
 
 (* this is a very small set of tests for the channel interface,
    intended to ensure that EOF conditions on the underlying flow are
    handled properly *)
-module Channel = Channel.Make(Fflow)
+module Channel = Channel.Make(F)
 
-let err_read = function
-  | Ok (`Data ch) -> fail "character %c was returned from Channel.read_char on an empty flow" ch
-  | Ok `Eof -> Lwt.return ()
-  | Error (`Msg m) -> fail "unexpected error: %s" m
+let check_eof = function
+| Ok (`Data ch) ->
+    fail "character %c was returned from Channel.read_char on an empty flow" ch
+| Ok `Eof -> Lwt.return ()
+| Error e -> fail "unexpected error: %a" Channel.pp_error e
 
 let err_no_exception () = fail "no exception"
 let err_wrong_exception e = fail "wrong exception: %s" (Printexc.to_string e)
 
 let test_read_char_eof () =
-  let f = Fflow.make () in
+  let f = F.make () in
   let c = Channel.create f in
-  Channel.read_char c >>= err_read
+  Channel.read_char c >>=
+  check_eof
 
 let test_read_line () =
   let input = "I am the very model of a modern major general" in
-  let f = Fflow.make ~input:(Fflow.input_string input) () in
+  let f = F.make ~input:(F.input_string input) () in
   let c = Channel.create f in
   Channel.read_line c >|= function
-  | Ok (`Data buf) -> assert_string "read line" input (Cstruct.copyv buf)
+  | Ok (`Data buf) -> Alcotest.(check string) "read line" input (Cstruct.copyv buf)
   | Ok `Eof -> fail "eof"
-  | Error (`Msg m) -> fail "error: %s" m
+  | Error e -> fail "error: %a" Channel.pp_error e
 
 let test_read_exactly () =
   let input = "I am the very model of a modern major general" in
-  let f = Fflow.make ~input:(Fflow.input_string input) () in
+  let f = F.make ~input:(F.input_string input) () in
   let c = Channel.create f in
   Channel.read_exactly ~len:4 c >|= function
-  | Ok (`Data bufs) -> assert_int "wrong length" 4 (Cstruct.(len (concat bufs)))
+  | Ok (`Data bufs) ->
+      Alcotest.(check int) "wrong length" 4 (Cstruct.(len (concat bufs)))
   | Ok `Eof -> fail "eof"
-  | Error (`Msg m) -> fail "error: %s" m
+  | Error e -> fail "error: %a" Channel.pp_error e
 
 let test_read_until_eof_then_write () =
   let str = "I am the very model of a modern major general" in
   let closed = ref false in
   let output _buf _off len =
     if !closed
-    then OUnit.assert_failure "attempted to write after the flow was closed"
+    then Alcotest.fail "attempted to write after the flow was closed"
     else Lwt.return len in
   let close () =
     closed := true;
     Lwt.return_unit in
-  let input = Fflow.input_string str in
-  let f = Fflow.make ~close ~input ~output () in
+  let input = F.input_string str in
+  let f = F.make ~close ~input ~output () in
   let c = Channel.create f in
   (* Should read to EOF: *)
   Channel.read_line c >>= fun _ ->
@@ -55,7 +61,7 @@ let test_read_until_eof_then_write () =
   Channel.flush c >|= function
   | Ok () -> ()
   | Error `Closed -> fail "error: closed"
-  | Error (`Msg m) -> fail "error: %s" m
+  | Error e       -> fail "error: %a" Channel.pp_write_error e
 
 let suite = [
   "read_char + EOF" , `Quick, test_read_char_eof;
