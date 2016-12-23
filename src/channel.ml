@@ -18,17 +18,30 @@
 
 (** Buffered reading and writing over the Flow API *)
 
+open Result
+
 let src = Logs.Src.create "channel" ~doc:"Buffered reading and writing over the Flow API"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
 open Lwt.Infix
 
-module Make(Flow:V1_LWT.FLOW) = struct
+module Make(Flow: V1_LWT.FLOW) = struct
 
   type flow = Flow.flow
   type buffer = Cstruct.t
   type +'a io = 'a Lwt.t
+
+  type error = [`Read_zero | `Flow of Flow.error]
+  type write_error = Flow.write_error
+
+  let pp_error ppf = function
+  | `Flow e    -> Flow.pp_error ppf e
+  | `Read_zero ->
+      Fmt.string ppf
+        "FLOW.read returned 0 bytes in violation of the specification"
+
+  let pp_write_error = Flow.pp_write_error
 
   type t = {
     flow: flow;
@@ -50,19 +63,19 @@ module Make(Flow:V1_LWT.FLOW) = struct
   let ibuf_refill t =
     Flow.read t.flow >|= function
     | Ok (`Data buf) when Cstruct.len buf = 0 ->
-      Log.err (fun f -> f "FLOW.read returned 0 bytes in violation of the specification");
-      Error (`Msg "Channel.read: FLOW.read returned 0 bytes in violation of the specification")
+        Log.err (fun l -> l "%a" pp_error `Read_zero);
+        Error `Read_zero
     | Ok (`Data buf) ->
-      t.ibuf <- Some buf;
-      Ok (`Data buf)
+        t.ibuf <- Some buf;
+        Ok (`Data buf)
     | Ok `Eof -> Ok `Eof
-    | Error (`Msg m) -> Error (`Msg m)
+    | Error e -> Error (`Flow e)
 
   let bind v fn =
    v >>= function
    | Ok (`Data buf) -> fn buf
    | Ok `Eof -> Lwt.return (Ok `Eof)
-   | Error (`Msg m) -> Lwt.return (Error (`Msg m))
+   | Error e -> Lwt.return (Error e)
 
   let (>>=~) = bind
 
@@ -131,7 +144,7 @@ module Make(Flow:V1_LWT.FLOW) = struct
   let read_line t =
     let rec get acc =
       read_until t '\n' >>= function
-      | Error (`Msg m) -> Lwt.return (Error (`Msg m))
+      | Error e -> Lwt.return (Error e)
       | Ok `Eof -> Lwt.return (Ok (`Data acc))
       | Ok (`Not_found buf) when Cstruct.len buf = 0 -> Lwt.return (Ok (`Data acc))
       | Ok (`Not_found buf) -> get (buf::acc)
