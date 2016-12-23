@@ -23,6 +23,5 @@ depends: [
   "mirage-flow-lwt" {test}
 ]
 conflicts: [ "tcpip" {<"2.5.0"} ]
-depopts: []
 build: [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%" "--tests" "false" ]
 build-test: [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%" "--tests" "true" ]
