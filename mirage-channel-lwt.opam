@@ -18,8 +18,7 @@ depends: [
   "lwt" {>= "2.4.7"}
   "cstruct"
   "logs"
-  "alcotest"        {test}
-  "mirage-flow-lwt" {test}
+  "alcotest" {test}
 ]
 conflicts: [ "tcpip" {<"2.5.0"} ]
 depopts: []

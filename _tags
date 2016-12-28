@@ -2,7 +2,7 @@ true : annot, bin_annot, safe_string, package(bytes)
 true: debug, short_paths, principal
 true: warn_error(+1..49), warn(A-4-41-44)
 
-<src/*>: package(mirage-flow)
+<src/*>: package(result mirage-flow)
 
 <lwt/*>: package(io-page mirage-channel mirage-flow-lwt cstruct lwt logs result)
 
