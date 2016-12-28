@@ -8,7 +8,7 @@ let fail fmt = Fmt.kstrf Alcotest.fail fmt
 (* this is a very small set of tests for the channel interface,
    intended to ensure that EOF conditions on the underlying flow are
    handled properly *)
-module Channel = Channel.Make(F)
+module Channel = Mirage_channel_lwt.Make(F)
 
 let check_eof = function
 | Ok (`Data ch) ->

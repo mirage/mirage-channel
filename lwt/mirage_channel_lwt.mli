@@ -14,7 +14,9 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-(** Functor to create a CHANNEL from a {!V1_LWT.FLOW} implementation *)
-module Make(F:V1_LWT.FLOW) : sig
-  include V1_LWT.CHANNEL with type flow = F.flow
-end
+module type S = Mirage_channel.S
+  with type 'a io = 'a Lwt.t
+   and type buffer = Cstruct.t
+
+(** Functor to create a CHANNEL from a flow implementation *)
+module Make(F: Mirage_flow_lwt.S): S with type flow = F.flow
