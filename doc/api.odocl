@@ -1,2 +1,2 @@
-Mirage_channel
-Mirage_channel_lwt
+src/Mirage_channel
+lwt/Mirage_channel_lwt
