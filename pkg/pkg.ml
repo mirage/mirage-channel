@@ -13,12 +13,13 @@ let opams =
     Pkg.opam_file ~lint_deps_excluding:(Some no_lint) ~install:false name
   in
   [
-  opam ["lwt"; "mirage-channel"] "opam";
-  opam ["mirage-flow"] "mirage-channel-lwt.opam";
+    opam ["alcotest"; "io-page"; "lwt"; "cstruct"; "logs";
+          "mirage-channel"; "mirage-flow-lwt"; "result"] "opam";
+    opam ["result"; "mirage-flow"] "mirage-channel-lwt.opam";
   ]
 
 let () =
-  Pkg.describe "mirage-channel" @@ fun c ->
+  Pkg.describe ~opams "mirage-channel" @@ fun c ->
   match Conf.pkg_name c with
   | "mirage-channel" ->
     Ok [ Pkg.lib "pkg/META";
