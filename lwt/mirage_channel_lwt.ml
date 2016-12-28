@@ -18,15 +18,19 @@
 
 (** Buffered reading and writing over the Flow API *)
 
+open Lwt.Infix
 open Result
 
-let src = Logs.Src.create "channel" ~doc:"Buffered reading and writing over the Flow API"
+module type S = Mirage_channel.S
+  with type 'a io = 'a Lwt.t
+   and type buffer = Cstruct.t
+
+let src = Logs.Src.create "channel"
+    ~doc:"Buffered reading and writing over the Flow API"
 
 module Log = (val Logs.src_log src : Logs.LOG)
 
-open Lwt.Infix
-
-module Make(Flow: V1_LWT.FLOW) = struct
+module Make(Flow: Mirage_flow_lwt.S) = struct
 
   type flow = Flow.flow
   type buffer = Cstruct.t

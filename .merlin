@@ -1,5 +1,6 @@
-PKG bytes io-page mirage-types-lwt cstruct lwt logs
+PKG bytes io-page mirage-flow-lwt cstruct lwt logs
 PKG mirage-flow-lwt alcotest
 S src
+S lwt
 S test
 B _build/**
