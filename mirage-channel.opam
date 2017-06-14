@@ -7,16 +7,16 @@ license:      "ISC"
 dev-repo:     "https://github.com/mirage/mirage-channel.git"
 bug-reports:  "https://github.com/mirage/mirage-channel/issues"
 tags:         ["org:mirage"]
+available: [ ocaml-version >= "4.02.3"]
 
-build: [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%"]
-
+build: [
+  [ "jbuilder" "subst" ] {pinned}
+  [ "jbuilder" "build" "-p" name "-j" jobs ]
+]
 depends: [
-  "ocamlfind" {build}
-  "ocamlbuild" {build}
-  "topkg" {build & >= "0.8.0"}
+  "jbuilder" {build & >="1.0+beta10"}
   "mirage-flow" {>= "1.2.0"}
 ]
 conflicts: [
   "tcpip" {< "3.0.0"}
 ]
-available: [ ocaml-version >= "4.01.0"]
