@@ -1,3 +1,0 @@
-version = "%%VERSION_NUM%%"
-description = "MirageOS signature for buffered channels over flows"
-requires = "mirage-flow"

@@ -8,13 +8,16 @@ dev-repo:     "https://github.com/mirage/mirage-channel.git"
 bug-reports:  "https://github.com/mirage/mirage-channel/issues"
 tags:         ["org:mirage"]
 
-build: [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%" "--tests" "false" "-n" name]
-build-test: [ "ocaml" "pkg/pkg.ml" "build" "--pinned" "%{pinned}%" "--tests" "true" ]
+build: [
+  [ "jbuilder" "subst" ] {pinned}
+  [ "jbuilder" "build" "-p" name "-j" jobs ]
+]
+build-test: [
+  [ "jbuilder" "runtest" "-p" name "-j" jobs ]
+]
 
 depends: [
-  "ocamlfind"  {build}
-  "ocamlbuild" {build}
-  "topkg"      {build & >= "0.8.0"}
+  "jbuilder" {build & >="1.0+beta10"}
   "mirage-flow-lwt" {>= "1.2.0"}
   "mirage-channel" {>= "3.0.0"}
   "io-page"
@@ -25,4 +28,4 @@ depends: [
   "alcotest" {test}
 ]
 conflicts: [ "tcpip" {<"2.5.0"} ]
-available: [ ocaml-version >= "4.01.0"]
+available: [ ocaml-version >= "4.02.3"]
