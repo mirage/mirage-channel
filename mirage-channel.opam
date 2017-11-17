@@ -7,7 +7,7 @@ license:      "ISC"
 dev-repo:     "https://github.com/mirage/mirage-channel.git"
 bug-reports:  "https://github.com/mirage/mirage-channel/issues"
 tags:         ["org:mirage"]
-available: [ ocaml-version >= "4.02.3"]
+available: [ ocaml-version >= "4.04.2"]
 
 build: [
   [ "jbuilder" "subst" ] {pinned}
