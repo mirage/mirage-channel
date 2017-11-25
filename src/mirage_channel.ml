@@ -23,8 +23,6 @@
 
     {e Release %%VERSION%% } *)
 
-open Result
-
 module type S = sig
 
   type error
