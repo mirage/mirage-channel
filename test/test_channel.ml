@@ -33,6 +33,36 @@ let test_read_line () =
   | Ok `Eof -> fail "eof"
   | Error e -> fail "error: %a" Channel.pp_error e
 
+(* The line is longer than the limit *)
+let test_read_line_len () =
+  let input = "I am the very model of a modern major general" in
+  let f = F.make ~input:(F.input_string input) () in
+  let c = Channel.create f in
+  Channel.read_line ~len:5 c >|= function
+  | Ok (`Data _) -> fail "read a line which was too big"
+  | Ok `Eof -> fail "eof"
+  | Error _ -> ()
+
+(* The line is shorter than the limit and bounded by \r\n *)
+let test_read_line_len2 () =
+  let input = "I\r\n am the very model of a modern major general" in
+  let f = F.make ~input:(F.input_string input) () in
+  let c = Channel.create f in
+  Channel.read_line ~len:5 c >|= function
+  | Ok (`Data buf) -> Alcotest.(check string) "read line" "I" (Cstruct.copyv buf)
+  | Ok `Eof -> fail "eof"
+  | Error e -> fail "error: %a" Channel.pp_error e
+
+(* The line is shorter than the limit and bounded by EOF *)
+let test_read_line_len3 () =
+  let input = "I am the very model of a modern major general" in
+  let f = F.make ~input:(F.input_string input) () in
+  let c = Channel.create f in
+  Channel.read_line ~len:50 c >|= function
+  | Ok (`Data buf) -> Alcotest.(check string) "read line" input (Cstruct.copyv buf)
+  | Ok `Eof -> fail "eof"
+  | Error e -> fail "error: %a" Channel.pp_error e
+
 let test_read_exactly () =
   let input = "I am the very model of a modern major general" in
   let f = F.make ~input:(F.input_string input) () in
@@ -69,4 +99,7 @@ let suite = [
   "read_line"       , `Quick, test_read_line;
   "read_exactly"    , `Quick, test_read_exactly;
   "write after read EOF", `Quick, test_read_until_eof_then_write;
+  "read_line_len"   , `Quick, test_read_line_len;
+  "read_line_len2"  , `Quick, test_read_line_len2;
+  "read_line_len3"  , `Quick, test_read_line_len3;
 ]
