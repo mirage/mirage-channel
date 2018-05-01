@@ -25,7 +25,7 @@
 
 module type S = sig
 
-  type error
+  type error = private [> `Line_too_long ]
   (** The type for errors. *)
 
   val pp_error: error Fmt.t

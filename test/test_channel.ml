@@ -41,7 +41,8 @@ let test_read_line_len () =
   Channel.read_line ~len:5 c >|= function
   | Ok (`Data _) -> fail "read a line which was too big"
   | Ok `Eof -> fail "eof"
-  | Error _ -> ()
+  | Error `Line_too_long -> ()
+  | Error e -> fail "error: %a" Channel.pp_error e
 
 (* The line is shorter than the limit and bounded by \r\n *)
 let test_read_line_len2 () =
