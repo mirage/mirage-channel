@@ -71,11 +71,19 @@ module type S = sig
   (** [read_exactly len t] reads [len] bytes from the channel [t] or fails
       with [Eof]. *)
 
-  val read_line: t -> (buffer list Mirage_flow.or_eof, error) result io
-  (** [read_line t] reads a line of input, which is terminated
-      either by a CRLF sequence, or the end of the channel (which
-      counts as a line).  @return Returns a list of views that
-      terminates at EOF. *)
+  val read_line: ?len:int -> t -> (buffer list Mirage_flow.or_eof, error) result io
+  (** [read_line t] reads a line of input which is terminated either by a CRLF
+      sequence, or the end of the channel (which counts as a line).
+
+      If [?len] is provided then the maximum length of the line returned will be
+      [len] bytes. If the line is longer than [len] then an error will be
+      returned.
+
+      If the input data is untrusted then care should be taken to ensure [len]
+      is set to an application-specific small value to bound the amount of
+      memory allocated by [read_line].
+
+      @return Returns a list of views that terminates at EOF. *)
 
   val write_char: t -> char -> unit
   (** [write_char t ch] writes a single character to the output
