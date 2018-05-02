@@ -77,7 +77,7 @@ module type S = sig
 
       If [?len] is provided then the maximum length of the line returned will be
       [len] bytes. If the line is longer than [len] then an error will be
-      returned.
+      returned and no bytes will be read from the channel.
 
       If the input data is untrusted then care should be taken to ensure [len]
       is set to an application-specific small value to bound the amount of

@@ -154,7 +154,12 @@ module Make(Flow: Mirage_flow_lwt.S) = struct
   let read_line ?len t =
     let rec get ?len acc =
       match len with
-      | Some 0 -> Lwt.return (Error `Line_too_long)
+      | Some 0 ->
+        (* Put the data we've already read back *)
+        let bits = List.rev (match t.ibuf with None -> acc | Some x -> x :: acc) in
+        let buf = Cstruct.concat bits in
+        t.ibuf <- (if Cstruct.len buf = 0 then None else Some buf);
+        Lwt.return (Error `Line_too_long)
       | _ ->
         read_until ?len t '\n' >>= function
         | Error e -> Lwt.return (Error e)

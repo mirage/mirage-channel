@@ -64,6 +64,26 @@ let test_read_line_len3 () =
   | Ok `Eof -> fail "eof"
   | Error e -> fail "error: %a" Channel.pp_error e
 
+(* The line is longer than the limit but I can retry *)
+let test_read_line_len4 () =
+  let input = "I am the very model\n of a modern major general" in
+  let f = F.make ~input:(F.input_string input) () in
+  let c = Channel.create f in
+  begin
+    Channel.read_line ~len:5 c >|= function
+    | Ok (`Data _) -> fail "read a line which was too big"
+    | Ok `Eof -> fail "eof"
+    | Error `Line_too_long -> ()
+    | Error e -> fail "error: %a" Channel.pp_error e
+  end
+  >>= fun () ->
+  begin
+    Channel.read_line ~len:50 c >|= function
+    | Ok (`Data buf) -> Alcotest.(check string) "read line" "I am the very model" (Cstruct.copyv buf)
+    | Ok `Eof -> fail "eof"
+    | Error e -> fail "error: %a" Channel.pp_error e
+  end
+
 let test_read_exactly () =
   let input = "I am the very model of a modern major general" in
   let f = F.make ~input:(F.input_string input) () in
@@ -101,4 +121,5 @@ let suite = [
   "read_line_len"   , `Quick, test_read_line_len;
   "read_line_len2"  , `Quick, test_read_line_len2;
   "read_line_len3"  , `Quick, test_read_line_len3;
+  "read_line_len4"  , `Quick, test_read_line_len4;
 ]
