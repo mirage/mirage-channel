@@ -4,14 +4,12 @@
 
 (alias
  (name runtest)
- (deps
-  (:< test.exe))
- (action
-  (run %{<} -e -v)))
+ (package mirage-channel-lwt)
+ (deps (:< test.exe))
+ (action (run %{<} -e -v)))
 
 (alias
  (name runtest)
- (deps
-  (:< test_channel.exe))
- (action
-  (run %{<} -e -v)))
+ (package mirage-channel-lwt)
+ (deps (:< test_channel.exe))
+ (action (run %{<} -e -v)))
