@@ -1,3 +1,9 @@
+v4.0.0
+------
+
+- remove mirage-channel-lwt, fold Make(Flow):S into mirage-channel
+- mirage-channel specialised on Lwt.t and Cstruct.t
+
 v3.2.0 2019-02-07
 -----------------
 
