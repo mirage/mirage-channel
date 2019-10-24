@@ -1,8 +1,9 @@
-v4.0.0
-------
+v4.0.0 2019-10-24
+-----------------
 
-- remove mirage-channel-lwt, fold Make(Flow):S into mirage-channel
-- mirage-channel specialised on Lwt.t and Cstruct.t
+- remove mirage-channel-lwt, fold Make(Flow):S into mirage-channel (#29 @hannesm)
+- mirage-channel specialised on Lwt.t and Cstruct.t (#29 @hannesm)
+- raise lower OCaml bound to 4.06.0 (#29 @hannesm)
 
 v3.2.0 2019-02-07
 -----------------

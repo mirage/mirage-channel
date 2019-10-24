@@ -18,7 +18,6 @@ depends: [
 ]
 conflicts: [
   "tcpip" {< "3.0.0"}
-  "mirage-channel-lwt"
 ]
 build: [
   ["dune" "subst"] {pinned}
