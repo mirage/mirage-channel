@@ -1,15 +1,15 @@
 (executables
  (names test test_channel)
- (libraries mirage-channel-lwt alcotest lwt.unix logs io-page io-page-unix))
+ (libraries mirage-channel mirage-flow-combinators alcotest lwt.unix logs))
 
 (alias
  (name runtest)
- (package mirage-channel-lwt)
+ (package mirage-channel)
  (deps (:< test.exe))
  (action (run %{<} -e -v)))
 
 (alias
  (name runtest)
- (package mirage-channel-lwt)
+ (package mirage-channel)
  (deps (:< test_channel.exe))
  (action (run %{<} -e -v)))
