@@ -1,3 +1,9 @@
+v4.0.1 2019-11-04
+-----------------
+
+* provide deprecated Mirage_channel_lwt for smooth transition (#31 @hannesm)
+
+
 v4.0.0 2019-10-24
 -----------------
 
