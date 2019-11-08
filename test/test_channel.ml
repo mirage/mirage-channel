@@ -63,6 +63,79 @@ let test_read_line_len3 () =
   | Ok `Eof -> fail "eof"
   | Error e -> fail "error: %a" Channel.pp_error e
 
+type channel = V : (module Mirage_channel.S with type t = 'a and type error = [> `Line_too_long ]) * 'a -> channel
+
+let channel_from_raw_string s =
+  let consumed = ref false in
+  let module Flow = struct
+    type flow = unit
+    type error = |
+    type write_error = Mirage_flow.write_error
+
+    let pp_error : error Fmt.t = fun _ -> function _ -> .
+    let pp_write_error : Mirage_flow.write_error Fmt.t =
+      fun ppf `Closed -> Fmt.string ppf "Flow closed"
+
+    let read () =
+      if not !consumed
+      then ( consumed := true
+           ; Lwt.return_ok (`Data (Cstruct.of_string s)) )
+      else Lwt.return_ok `Eof
+    let write _ _ = assert false
+    let writev _ _ = assert false
+    let close _ = Lwt.return ()
+  end in
+  let module Channel = Mirage_channel.Make(Flow) in
+  V ((module Channel), Channel.create ())
+
+let test_read_line_len4 () =
+  let V ((module Channel), c) = channel_from_raw_string "foo" in
+  Channel.read_line ~len:3 c >|= function
+  | Ok (`Data bufs) -> fail "Unexpected data: %S"
+                         Cstruct.(to_string (concat bufs))
+  | Ok `Eof -> fail "eof"
+  | Error e -> match e with
+    | `Line_too_long -> ()
+    | e -> fail "Unexpected error: %a" Channel.pp_error e
+
+let test_read_line_len5 () =
+  let V ((module Channel), c) = channel_from_raw_string "foo\r" in
+  Channel.read_line ~len:3 c >|= function
+  | Ok (`Data bufs) -> fail "Unexpected data: %S"
+                         Cstruct.(to_string (concat bufs))
+  | Ok `Eof -> fail "eof"
+  | Error e -> match e with
+    | `Line_too_long -> ()
+    | e -> fail "Unexpected error: %a" Channel.pp_error e
+
+let test_read_line_len6 () =
+  let V ((module Channel), c) = channel_from_raw_string "foo\r\n" in
+  Channel.read_line ~len:3 c >|= function
+  | Ok (`Data bufs) -> fail "Unexpected data: %S"
+                         Cstruct.(to_string (concat bufs))
+  | Ok `Eof -> fail "eof"
+  | Error e -> match e with
+    | `Line_too_long -> ()
+    | e -> fail "Unexpected error: %a" Channel.pp_error e
+
+let test_read_line_len7 () =
+  let V ((module Channel), c) = channel_from_raw_string "foo\r\n" in
+  Channel.read_line ~len:4 c >|= function
+  | Ok (`Data bufs) -> fail "Unexpected data: %S"
+                         Cstruct.(to_string (concat bufs))
+  | Ok `Eof -> fail "eof"
+  | Error e -> match e with
+    | `Line_too_long -> ()
+    | e -> fail "Unexpected error: %a" Channel.pp_error e
+
+let test_read_line_len8 () =
+  let V ((module Channel), c) = channel_from_raw_string "foo\r\n" in
+  Channel.read_line ~len:5 c >|= function
+  | Ok (`Data bufs) ->
+    Alcotest.(check string) "read line" "foo" Cstruct.(to_string (concat bufs))
+  | Ok `Eof -> fail "eof"
+  | Error e -> fail "Unexpected error: %a" Channel.pp_error e
+
 let test_read_exactly () =
   let input = "I am the very model of a modern major general" in
   let f = F.make ~input:(F.input_string input) () in
@@ -102,4 +175,9 @@ let suite = [
   "read_line_len"   , `Quick, test_read_line_len;
   "read_line_len2"  , `Quick, test_read_line_len2;
   "read_line_len3"  , `Quick, test_read_line_len3;
+  "read_line_len4"  , `Quick, test_read_line_len4;
+  "read_line_len5"  , `Quick, test_read_line_len5;
+  "read_line_len6"  , `Quick, test_read_line_len6;
+  "read_line_len7"  , `Quick, test_read_line_len7;
+  "read_line_len8"  , `Quick, test_read_line_len8;
 ]
