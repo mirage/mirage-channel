@@ -72,7 +72,7 @@ module type S = sig
 
       If [?len] is provided then the maximum length of the line returned will be
       [len] bytes. If the line is longer than [len] then an error will be
-      returned.
+      returned. With [len = 0], [read_line] always returns an error.
 
       If the input data is untrusted then care should be taken to ensure [len]
       is set to an application-specific small value to bound the amount of
@@ -109,4 +109,6 @@ module type S = sig
 end
 
 (** Functor to create a CHANNEL from a flow implementation *)
-module Make(F: Mirage_flow.S): S with type flow = F.flow
+module Make(F: Mirage_flow.S)
+  : S with type flow = F.flow
+       and type error = private [> `Read_zero | `Flow of F.error | `Line_too_long ]
