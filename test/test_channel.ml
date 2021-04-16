@@ -2,7 +2,7 @@ open Lwt.Infix
 
 module F = Mirage_flow_combinators.F
 
-let fail fmt = Fmt.kstrf Alcotest.fail fmt
+let fail fmt = Fmt.kstrf (fun s -> Alcotest.fail s) fmt
 
 (* this is a very small set of tests for the channel interface,
    intended to ensure that EOF conditions on the underlying flow are
