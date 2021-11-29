@@ -28,7 +28,7 @@ module type S = sig
   val read_char: t -> (char Mirage_flow.or_eof, error) result Lwt.t
   val read_some: ?len:int -> t -> (Cstruct.t Mirage_flow.or_eof, error) result Lwt.t
   val read_exactly: len:int -> t -> (Cstruct.t list Mirage_flow.or_eof, error) result Lwt.t
-  val read_line: t -> (Cstruct.t list Mirage_flow.or_eof, error) result Lwt.t
+  val read_line: ?len:int -> t -> (Cstruct.t list Mirage_flow.or_eof, error) result Lwt.t
   val write_char: t -> char -> unit
   val write_string: t -> string -> int -> int -> unit
   val write_buffer: t -> Cstruct.t -> unit
@@ -47,7 +47,7 @@ module Make(Flow: Mirage_flow.S) = struct
 
   type flow = Flow.flow
 
-  type error = [`Read_zero | `Flow of Flow.error]
+  type error = [`Line_too_long|`Read_zero | `Flow of Flow.error]
   type write_error = Flow.write_error
 
   let pp_error ppf = function
@@ -55,6 +55,9 @@ module Make(Flow: Mirage_flow.S) = struct
   | `Read_zero ->
       Fmt.string ppf
         "FLOW.read returned 0 bytes in violation of the specification"
+  | `Line_too_long ->
+      Fmt.string ppf
+        "Unable to read a line because it is too long"
 
   let pp_write_error = Flow.pp_write_error
 
@@ -137,42 +140,51 @@ module Make(Flow: Mirage_flow.S) = struct
     loop [] len
 
   (* Read until a character is found *)
-  let read_until t ch =
+  let read_until ?len t ch =
     get_ibuf t >>=~ fun buf ->
-    let len = Cstruct.len buf in
+    (* Scan up to the length of the buffer or the supplied limit, whichever
+       is smaller. *)
+    let scan_len = 
+      let len' = Cstruct.len buf in
+      match len with None -> len' | Some x -> min x len' in
     let rec scan off =
-      if off = len then None
+      if off = scan_len then None
       else if Cstruct.get_char buf off = ch then Some off else scan (off+1)
     in
     match scan 0 with
     | None -> (* not found, return what we have until EOF *)
-       t.ibuf <- None; (* basically guaranteeing that next read is EOF *)
-       Lwt.return (Ok (`Not_found buf))
+      t.ibuf <- Some (Cstruct.shift buf scan_len);
+      Lwt.return (Ok (`Not_found (Cstruct.sub buf 0 scan_len)))
     | Some off -> (* found, so split the buffer *)
-       let hd = Cstruct.sub buf 0 off in
-       t.ibuf <- Some (Cstruct.shift buf (off+1));
-       Lwt.return (Ok (`Found hd))
+      let hd = Cstruct.sub buf 0 off in
+      t.ibuf <- Some (Cstruct.shift buf (off+1));
+      Lwt.return (Ok (`Found hd))
 
   (* This reads a line of input, which is terminated either by a CRLF
      sequence, or the end of the channel (which counts as a line).
      @return Returns a stream of views that terminates at EOF. *)
-  let read_line t =
-    let rec get acc =
-      read_until t '\n' >>= function
-      | Error e -> Lwt.return (Error e)
-      | Ok `Eof -> Lwt.return (Ok (`Data acc))
-      | Ok (`Not_found buf) when Cstruct.len buf = 0 -> Lwt.return (Ok (`Data acc))
-      | Ok (`Not_found buf) -> get (buf::acc)
-      | Ok (`Found buf) ->
-          (* chop the CR if present *)
-          let buflen = Cstruct.len buf in
-          let buf =
-            if buflen > 0 && (Cstruct.get_char buf (buflen-1) = '\r') then
-              Cstruct.sub buf 0 (buflen-1) else buf
-          in
-          Lwt.return (Ok (`Data (buf :: acc)))
+  let read_line ?len t =
+    let rec get ?len acc =
+      match len with
+      | Some 0 -> Lwt.return (Error `Line_too_long)
+      | _ ->
+        read_until ?len t '\n' >>= function
+        | Error e -> Lwt.return (Error e)
+        | Ok `Eof -> Lwt.return (Ok (`Data acc))
+        | Ok (`Not_found buf) when Cstruct.len buf = 0 -> Lwt.return (Ok (`Data acc))
+        | Ok (`Not_found buf) ->
+          let len = match len with None -> None | Some l -> Some (l - (Cstruct.len buf)) in
+          get ?len (buf::acc)
+        | Ok (`Found buf) ->
+            (* chop the CR if present *)
+            let buflen = Cstruct.len buf in
+            let buf =
+              if buflen > 0 && (Cstruct.get_char buf (buflen-1) = '\r') then
+                Cstruct.sub buf 0 (buflen-1) else buf
+            in
+            Lwt.return (Ok (`Data (buf :: acc)))
     in
-    get [] >>=~ fun bits -> Lwt.return (Ok (`Data (List.rev bits)))
+    get ?len [] >>=~ fun bits -> Lwt.return (Ok (`Data (List.rev bits)))
 
   (* Output functions *)
 
