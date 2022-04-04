@@ -4,7 +4,7 @@ authors: ["Anil Madhavapeddy" "Mindy Preston" "Thomas Gazagnaire"]
 license: "ISC"
 tags: "org:mirage"
 homepage: "https://github.com/mirage/mirage-channel"
-doc: "http://mirage.github.io/mirage-channel/"
+doc: "https://mirage.github.io/mirage-channel/"
 bug-reports: "https://github.com/mirage/mirage-channel/issues"
 depends: [
   "ocaml" {>= "4.07.0"}
