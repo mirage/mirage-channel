@@ -2,7 +2,7 @@ open Lwt.Infix
 
 module F = Mirage_flow_combinators.F
 
-let fail fmt = Fmt.kstrf (fun s -> Alcotest.fail s) fmt
+let fail fmt = Fmt.kstr (fun s -> Alcotest.fail s) fmt
 
 (* this is a very small set of tests for the channel interface,
    intended to ensure that EOF conditions on the underlying flow are
@@ -142,7 +142,7 @@ let test_read_exactly () =
   let c = Channel.create f in
   Channel.read_exactly ~len:4 c >|= function
   | Ok (`Data bufs) ->
-      Alcotest.(check int) "wrong length" 4 (Cstruct.(len (concat bufs)))
+      Alcotest.(check int) "wrong length" 4 (Cstruct.(length (concat bufs)))
   | Ok `Eof -> fail "eof"
   | Error e -> fail "error: %a" Channel.pp_error e
 

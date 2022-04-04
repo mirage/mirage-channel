@@ -80,7 +80,7 @@ module Make(Flow: Mirage_flow.S) = struct
 
   let ibuf_refill t =
     Flow.read t.flow >|= function
-    | Ok (`Data buf) when Cstruct.len buf = 0 ->
+    | Ok (`Data buf) when Cstruct.length buf = 0 ->
         Log.err (fun l -> l "%a" pp_error `Read_zero);
         Error `Read_zero
     | Ok (`Data buf) ->
@@ -100,7 +100,7 @@ module Make(Flow: Mirage_flow.S) = struct
   let rec get_ibuf t =
     match t.ibuf with
     | None -> ibuf_refill t >>=~ fun _ -> get_ibuf t
-    | Some buf when Cstruct.len buf = 0 -> ibuf_refill t >>=~ fun _ -> get_ibuf t
+    | Some buf when Cstruct.length buf = 0 -> ibuf_refill t >>=~ fun _ -> get_ibuf t
     | Some buf -> Lwt.return (Ok (`Data buf))
 
   (* Read one character from the input channel *)
@@ -117,7 +117,7 @@ module Make(Flow: Mirage_flow.S) = struct
   let read_some ?len t =
     (* get_ibuf potentially throws EOF-related exceptions *)
     get_ibuf t >>=~ fun buf ->
-    let avail = Cstruct.len buf in
+    let avail = Cstruct.length buf in
     let len = match len with |Some len -> len |None -> avail in
     if len < avail then begin
       let hd,tl = Cstruct.split buf len in
@@ -136,7 +136,7 @@ module Make(Flow: Mirage_flow.S) = struct
       | len ->
         read_some ~len t
         >>=~ fun buffer ->
-        loop (buffer :: acc) (len - (Cstruct.len buffer)) in
+        loop (buffer :: acc) (len - (Cstruct.length buffer)) in
     loop [] len
 
   (* Read until a character is found *)
@@ -144,8 +144,8 @@ module Make(Flow: Mirage_flow.S) = struct
     get_ibuf t >>=~ fun buf ->
     (* Scan up to the length of the buffer or the supplied limit, whichever
        is smaller. *)
-    let scan_len = 
-      let len' = Cstruct.len buf in
+    let scan_len =
+      let len' = Cstruct.length buf in
       match len with None -> len' | Some x -> min x len' in
     let rec scan off =
       if off = scan_len then None
@@ -171,13 +171,13 @@ module Make(Flow: Mirage_flow.S) = struct
         read_until ?len t '\n' >>= function
         | Error e -> Lwt.return (Error e)
         | Ok `Eof -> Lwt.return (Ok (`Data acc))
-        | Ok (`Not_found buf) when Cstruct.len buf = 0 -> Lwt.return (Ok (`Data acc))
+        | Ok (`Not_found buf) when Cstruct.length buf = 0 -> Lwt.return (Ok (`Data acc))
         | Ok (`Not_found buf) ->
-          let len = match len with None -> None | Some l -> Some (l - (Cstruct.len buf)) in
+          let len = match len with None -> None | Some l -> Some (l - (Cstruct.length buf)) in
           get ?len (buf::acc)
         | Ok (`Found buf) ->
             (* chop the CR if present *)
-            let buflen = Cstruct.len buf in
+            let buflen = Cstruct.length buf in
             let buf =
               if buflen > 0 && (Cstruct.get_char buf (buflen-1) = '\r') then
                 Cstruct.sub buf 0 (buflen-1) else buf
@@ -199,7 +199,7 @@ module Make(Flow: Mirage_flow.S) = struct
   let queue_obuf t =
     match t.obuf with
     |None -> ()
-    |Some buf when Cstruct.len buf = t.opos -> (* obuf is full *)
+    |Some buf when Cstruct.length buf = t.opos -> (* obuf is full *)
       t.obufq <- buf :: t.obufq;
       t.obuf <- None
     |Some _ when t.opos = 0 -> (* obuf wasnt ever used, so discard *)
@@ -214,7 +214,7 @@ module Make(Flow: Mirage_flow.S) = struct
   let get_obuf t =
     match t.obuf with
     |None -> alloc_obuf t
-    |Some buf when Cstruct.len buf = t.opos -> queue_obuf t; alloc_obuf t
+    |Some buf when Cstruct.length buf = t.opos -> queue_obuf t; alloc_obuf t
     |Some buf -> buf
 
   (* Non-blocking character write, since Io page allocation never blocks.
@@ -232,7 +232,7 @@ module Make(Flow: Mirage_flow.S) = struct
 
   let rec write_string t s off len =
     let buf = get_obuf t in
-    let avail = Cstruct.len buf - t.opos in
+    let avail = Cstruct.length buf - t.opos in
     if avail < len then begin
       Cstruct.blit_from_string s off buf t.opos avail;
       t.opos <- t.opos + avail;
