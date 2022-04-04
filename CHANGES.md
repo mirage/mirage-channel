@@ -1,3 +1,11 @@
+v4.1.0 2022-04-04
+-----------------
+
+* Add an optional size limit to `read_line` (#32 @djs55)
+* Redefine type error as private type of polymorphic variant (#32 @dinosaure)
+* Restore compatibility with alcotest 1.4.0 (#33 @CraigFE)
+* Update to cstruct 6.0.0 API, remove use of deprecated Cstruct.len (#34 @hannesm)
+
 v4.0.1 2019-11-04
 -----------------
 
