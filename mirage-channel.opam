@@ -50,3 +50,4 @@ Channel.flush t
 
 mirage-channel is distributed under the ISC license.
 """
+x-maintenance-intent: [ "(latest)" ]
