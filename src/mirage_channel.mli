@@ -106,6 +106,9 @@ module type S = sig
   (** [close t] calls {!flush} and then close the underlying
       flow. *)
 
+  val shutdown : t -> [ `read | `write | `read_write ] -> (unit, write_error) result Lwt.t
+  (** [shutdown t mode] calls {!flush} and then shutdown on the underlying
+      flow. *)
 end
 
 (** Functor to create a CHANNEL from a flow implementation *)

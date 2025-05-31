@@ -10,23 +10,27 @@ Example:
 ```ocaml
 module Channel = Channel.Make(Flow)
 ...
-Channel.read_exactly ~len:16 t
->>= fun bufs -> (* read header of message *)
-let payload_length = Cstruct.(LE.get_uint16 (concat bufs) 0) in
-Channel.read_exactly ~len:payload_length t
->>= fun bufs -> (* payload of message *)
-
+Channel.read_exactly ~len:16 t >>= function
+| Error read_error
+| Ok `Eof -> ...
+| Ok `Data bufs -> (* read header of message *)
+  let payload_length = Cstruct.(LE.get_uint16 (concat bufs) 0) in
+  Channel.read_exactly ~len:payload_length t >>= function
+  | Ok `Data bufs -> (* payload of message *)
+  | Ok `Eof -> ...
+  | Error read_error
 (* process message *)
 
 Channel.write_buffer t header;
 Channel.write_buffer t payload;
-Channel.flush t
->>= fun () ->
+Channel.flush t >>= function
+| Error write_error -> ...
+| Ok () -> ...
 ```
 
 mirage-channel is distributed under the ISC license.
 
-* Homepage: https://github.com/mirage/mirage-channel  
+* Homepage: https://github.com/mirage/mirage-channel
 * Issue: <https://github.com/mirage/mirage-channel/issues>
 * Contact: `<mirageos-devel@lists.xenproject.org>`
 
@@ -34,7 +38,7 @@ mirage-channel is distributed under the ISC license.
 
 mirage-channel can be installed with `opam`:
 
-    opam install channel
+    opam install mirage-channel
 
 If you don't use `opam` consult the [`opam`](opam) file for build
 instructions.
@@ -56,9 +60,5 @@ the directory `opam config var channel:doc`.
 In the distribution sample programs and tests are located in the
 [`test`](test) directory of the distribution. They can be built with:
 
-    ./build test
-
-The resulting binaries are in `_build/test`.
-
-- `test.native` tests the library, nothing should fail.
+    dune runtest
 
