@@ -1,3 +1,14 @@
+v5.0.0 2025-05-31
+-----------------
+
+* Add lower bounds in opam file
+* Add x-maintenance-intent: [ "(latest)" ] to the opam file (@hannesm #36 #37)
+* Remove deprecated Mirage_channel_lwt (reported by @vog in #35, fixed in #37)
+* Adapt README to the curent API (reported by @Ulrar in #26, fixed in #37)
+* Add the `shutdown` function to the interface (since mirage-flow 4), initially
+  #9 by @djs55, #37 @hannesm
+* Fix tests with mirage-flow 4 being released (#37 @hannesm)
+
 v4.1.0 2022-04-04
 -----------------
 
