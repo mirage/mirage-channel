@@ -35,6 +35,7 @@ module type S = sig
   val write_line: t -> string -> unit
   val flush: t -> (unit, write_error) result Lwt.t
   val close: t -> (unit, write_error) result Lwt.t
+  val shutdown: t -> [ `read | `write | `read_write ] -> (unit, write_error) result Lwt.t
 end
 
 open Lwt.Infix
@@ -255,4 +256,6 @@ module Make(Flow: Mirage_flow.S) = struct
   let close t =
     Lwt.finalize (fun () -> flush t) (fun () -> Flow.close t.flow)
 
+  let shutdown t mode =
+    Lwt.finalize (fun () -> flush t) (fun () -> Flow.shutdown t.flow mode)
 end
