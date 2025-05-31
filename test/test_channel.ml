@@ -84,6 +84,7 @@ let channel_from_raw_string s =
     let write _ _ = assert false
     let writev _ _ = assert false
     let close _ = Lwt.return ()
+    let shutdown _ _ = Lwt.return_unit
   end in
   let module Channel = Mirage_channel.Make(Flow) in
   V ((module Channel), Channel.create ())
